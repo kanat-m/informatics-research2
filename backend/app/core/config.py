@@ -2,9 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = (
-        "postgresql+psycopg://app:change_me@localhost:5432/research"
-    )
+    database_url: str = "postgresql+psycopg://app:change_me@localhost:5432/research"
     cors_origins: list[str] = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
