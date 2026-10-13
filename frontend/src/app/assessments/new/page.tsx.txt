@@ -1,0 +1,11 @@
+import { AssessmentForm } from "@/components/AssessmentForm";
+import { createAssessment } from "../actions";
+
+export default function NewAssessmentPage() {
+  return (
+    <section className="space-y-6">
+      <h1 className="text-2xl font-bold">Жаңа бағалау</h1>
+      <AssessmentForm action={createAssessment} />
+    </section>
+  );
+}
