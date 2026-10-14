@@ -18,4 +18,6 @@ class Assessment(Base):
     class_name: Mapped[str] = mapped_column(String(20))
     teacher: Mapped[str | None] = mapped_column(String(200))
     comment: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

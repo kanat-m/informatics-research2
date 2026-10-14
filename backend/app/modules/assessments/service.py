@@ -13,6 +13,7 @@ def list_assessments(
     limit: int = 20,
     offset: int = 0,
 ) -> list[Assessment]:
+    """Тізімді алу: іздеу, сүзгілеу, пагинация."""
     stmt = select(Assessment).order_by(Assessment.date.desc(), Assessment.id.desc())
     if q:
         pattern = f"%{q}%"
@@ -20,6 +21,8 @@ def list_assessments(
             or_(
                 Assessment.student_name.ilike(pattern),
                 Assessment.teacher.ilike(pattern),
+                Assessment.subject.ilike(pattern),
+                Assessment.comment.ilike(pattern),
             )
         )
     if subject:
@@ -30,10 +33,12 @@ def list_assessments(
 
 
 def get_assessment(session: Session, assessment_id: int) -> Assessment | None:
+    """Бір жазбаны ID бойынша алу."""
     return session.get(Assessment, assessment_id)
 
 
 def create_assessment(session: Session, data: AssessmentCreate) -> Assessment:
+    """Жаңа жазба жасау."""
     assessment = Assessment(**data.model_dump())
     session.add(assessment)
     session.commit()
@@ -44,6 +49,7 @@ def create_assessment(session: Session, data: AssessmentCreate) -> Assessment:
 def update_assessment(
     session: Session, assessment: Assessment, data: AssessmentUpdate
 ) -> Assessment:
+    """Жазбаны өзгерту."""
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(assessment, field, value)
     session.commit()
@@ -52,5 +58,30 @@ def update_assessment(
 
 
 def delete_assessment(session: Session, assessment: Assessment) -> None:
+    """Жазбаны өшіру."""
     session.delete(assessment)
     session.commit()
+
+
+def semantic_search(session: Session, query: str, limit: int = 10) -> list[Assessment]:
+    """Мағына бойынша іздеу (кілт сөздер бойынша).
+
+    PostgreSQL-дың ILIKE операторын қолданады.
+    """
+    pattern = f"%{query}%"
+    stmt = (
+        select(Assessment)
+        .where(
+            or_(
+                Assessment.student_name.ilike(pattern),
+                Assessment.subject.ilike(pattern),
+                Assessment.teacher.ilike(pattern),
+                Assessment.comment.ilike(pattern),
+                Assessment.class_name.ilike(pattern),
+                Assessment.assessment_type.ilike(pattern),
+            )
+        )
+        .order_by(Assessment.date.desc(), Assessment.id.desc())
+        .limit(limit)
+    )
+    return list(session.scalars(stmt))

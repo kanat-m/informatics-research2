@@ -1,6 +1,6 @@
-"""Seed the database with sample assessment data.
+"""Дерекқорды сынақ бағалау деректерімен толтыру.
 
-Run with:
+Іске қосу:
     docker compose exec backend python -m scripts.seed
 """
 
@@ -68,12 +68,13 @@ COMMENTS = [
 
 
 def random_date() -> date:
-    """Random date within the last 6 months."""
+    """Соңғы 6 айдың ішінде кездейсоқ күн."""
     days_ago = random.randint(0, 180)
     return date.today() - timedelta(days=days_ago)
 
 
 def make_assessment() -> Assessment:
+    """Бір Assessment нысанын жасау."""
     grade = random.choices([2, 3, 4, 5], weights=[1, 3, 4, 5])[0]
     return Assessment(
         student_name=random.choice(STUDENTS),
@@ -88,19 +89,19 @@ def make_assessment() -> Assessment:
 
 
 def main() -> None:
-    random.seed(42)  # reproducible data
+    random.seed(42)  # қайталанатын деректер
 
     with SessionLocal() as session:
         existing = session.scalar(select(Assessment).limit(1))
         if existing is not None:
-            print("Database already has assessments. Skipping seed.")
+            print("Дерекқорда бағалаулар бар. Seed өткізілді.")
             return
 
         assessments = [make_assessment() for _ in range(40)]
         session.add_all(assessments)
         session.commit()
 
-        print(f"Seeded {len(assessments)} assessments.")
+        print(f"Дерекқорға {len(assessments)} бағалау қосылды.")
 
 
 if __name__ == "__main__":
