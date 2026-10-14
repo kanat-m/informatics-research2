@@ -1,4 +1,11 @@
-import type { Assessment, AssessmentInput } from "./types";
+import type {
+  Assessment,
+  AssessmentInput,
+  LoginRequest,
+  Token,
+  User,
+  UserCreate,
+} from "./types";
 
 const API_URL = process.env.API_URL ?? "http://localhost:8000";
 
@@ -14,6 +21,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (res.status === 204 ? undefined : await res.json()) as T;
 }
 
+function authHeaders(token: string | null): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export const api = {
   list(q?: string, page = 1, pageSize = 20) {
     const params = new URLSearchParams({
@@ -22,6 +33,11 @@ export const api = {
     });
     if (q) params.set("q", q);
     return request<Assessment[]>(`/assessments?${params}`);
+  },
+
+  semanticSearch(q: string, limit = 10) {
+    const params = new URLSearchParams({ q, limit: String(limit) });
+    return request<Assessment[]>(`/assessments/semantic?${params}`);
   },
 
   async get(id: number): Promise<Assessment | null> {
@@ -33,21 +49,46 @@ export const api = {
     return res.json();
   },
 
-  create(data: AssessmentInput) {
+  create(data: AssessmentInput, token: string | null) {
     return request<Assessment>("/assessments", {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    });
+  },
+
+  update(id: number, data: Partial<AssessmentInput>, token: string | null) {
+    return request<Assessment>(`/assessments/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(token),
+      body: JSON.stringify(data),
+    });
+  },
+
+  remove(id: number, token: string | null) {
+    return request<void>(`/assessments/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(token),
+    });
+  },
+
+  register(data: UserCreate) {
+    return request<User>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  update(id: number, data: Partial<AssessmentInput>) {
-    return request<Assessment>(`/assessments/${id}`, {
-      method: "PATCH",
+  login(data: LoginRequest) {
+    return request<Token>("/auth/login", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   },
 
-  remove(id: number) {
-    return request<void>(`/assessments/${id}`, { method: "DELETE" });
+  me(token: string) {
+    return request<User>("/auth/me", {
+      headers: authHeaders(token),
+    });
   },
 };

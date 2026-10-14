@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.modules.assessments.router import router as assessments_router
+from app.modules.auth.router import router as auth_router
 
 app = FastAPI(
     title="AI Education Quality API",
@@ -24,4 +25,5 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+app.include_router(auth_router)
 app.include_router(assessments_router)

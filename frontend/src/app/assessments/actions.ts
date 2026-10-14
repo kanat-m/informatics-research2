@@ -3,20 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { api } from "@/lib/api";
+import { getAuthToken } from "@/lib/auth";
 import type { AssessmentInput, FormState } from "@/lib/types";
 
 function parseForm(formData: FormData): AssessmentInput | null {
   const text = (name: string) => String(formData.get(name) ?? "").trim();
-  const title = text("student_name");
-  const authors = text("subject");
-  const year = Number(text("grade"));
-  if (title.length < 2 || authors.length < 2 || !Number.isInteger(year)) {
+  const student_name = text("student_name");
+  const subject = text("subject");
+  const grade = Number(text("grade"));
+
+  if (student_name.length < 2 || subject.length < 2 || !Number.isInteger(grade)) {
     return null;
   }
   return {
-    student_name: title,
-    subject: authors,
-    grade: year,
+    student_name,
+    subject,
+    grade,
     assessment_type: text("assessment_type"),
     date: text("date"),
     class_name: text("class_name"),
@@ -29,16 +31,21 @@ export async function createAssessment(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const token = await getAuthToken();
+  if (!token) {
+    redirect("/login");
+  }
+
   const data = parseForm(formData);
   if (!data) {
-    return { error: "Проверьте поля: название, авторы и год обязательны." };
+    return { error: "Барлық міндетті өрістерді толтырыңыз." };
   }
 
   let id: number;
   try {
-    id = (await api.create(data)).id;
+    id = (await api.create(data, token)).id;
   } catch {
-    return { error: "Не удалось сохранить. Возможно, дубликат." };
+    return { error: "Сақтау мүмкін болмады. Қайта көріңіз." };
   }
   revalidatePath("/assessments");
   redirect(`/assessments/${id}`);
@@ -49,22 +56,32 @@ export async function updateAssessment(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const token = await getAuthToken();
+  if (!token) {
+    redirect("/login");
+  }
+
   const data = parseForm(formData);
   if (!data) {
-    return { error: "Проверьте поля." };
+    return { error: "Барлық міндетті өрістерді толтырыңыз." };
   }
 
   try {
-    await api.update(id, data);
+    await api.update(id, data, token);
   } catch {
-    return { error: "Не удалось сохранить изменения." };
+    return { error: "Өзгерту мүмкін болмады." };
   }
   revalidatePath("/assessments");
   redirect(`/assessments/${id}`);
 }
 
 export async function deleteAssessment(id: number) {
-  await api.remove(id);
+  const token = await getAuthToken();
+  if (!token) {
+    redirect("/login");
+  }
+
+  await api.remove(id, token);
   revalidatePath("/assessments");
   redirect("/assessments");
 }

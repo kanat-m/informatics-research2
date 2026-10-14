@@ -6,6 +6,7 @@ from alembic import context
 from app.core.config import settings
 from app.db import Base
 from app.modules.assessments import models  # noqa: F401  — модельдерді тіркейді
+from app.modules.auth import models as auth_models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

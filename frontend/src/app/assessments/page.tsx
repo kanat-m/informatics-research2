@@ -1,20 +1,27 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { getAuthToken } from "@/lib/auth";
 
 const PAGE_SIZE = 20;
 
 export default async function AssessmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; mode?: string }>;
 }) {
-  const { q, page } = await searchParams;
+  const { q, page, mode } = await searchParams;
   const current = Math.max(1, Number(page) || 1);
-  const items = await api.list(q, current, PAGE_SIZE);
+  const isSemantic = mode === "semantic";
+  const token = await getAuthToken();
+
+  const items = q && isSemantic
+    ? await api.semanticSearch(q, 20)
+    : await api.list(q, current, PAGE_SIZE);
 
   const link = (p: number) =>
     `/assessments?${new URLSearchParams({
       ...(q ? { q } : {}),
+      ...(isSemantic ? { mode: "semantic" } : {}),
       page: String(p),
     })}`;
 
@@ -22,22 +29,47 @@ export default async function AssessmentsPage({
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Бағалаулар</h1>
-        <Link
-          href="/assessments/new"
-          className="rounded bg-blue-700 px-4 py-2 text-white"
-        >
-          + Қосу
-        </Link>
+        {token && (
+          <Link
+            href="/assessments/new"
+            className="rounded bg-blue-700 px-4 py-2 text-white"
+          >
+            + Қосу
+          </Link>
+        )}
       </div>
 
-      <form className="flex gap-2">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Оқушы немесе мұғалім аты..."
-          className="flex-1 rounded border px-3 py-2"
-        />
-        <button className="rounded border bg-white px-4 py-2">Табу</button>
+      <form className="space-y-3">
+        <div className="flex gap-2">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Оқушы немесе мұғалім аты..."
+            className="flex-1 rounded border px-3 py-2"
+          />
+          <button className="rounded border bg-white px-4 py-2">Табу</button>
+        </div>
+
+        <div className="flex items-center gap-4 text-sm">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="mode"
+              value="simple"
+              defaultChecked={!isSemantic}
+            />
+            Қарапайым іздеу
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="mode"
+              value="semantic"
+              defaultChecked={isSemantic}
+            />
+            Мағына бойынша іздеу
+          </label>
+        </div>
       </form>
 
       {items.length === 0 ? (
@@ -61,20 +93,22 @@ export default async function AssessmentsPage({
         </ul>
       )}
 
-      <div className="flex justify-between">
-        {current > 1 ? (
-          <Link href={link(current - 1)} className="text-blue-700 underline">
-            ← Алдыңғы
-          </Link>
-        ) : (
-          <span />
-        )}
-        {items.length === PAGE_SIZE && (
-          <Link href={link(current + 1)} className="text-blue-700 underline">
-            Келесі →
-          </Link>
-        )}
-      </div>
+      {!isSemantic && (
+        <div className="flex justify-between">
+          {current > 1 ? (
+            <Link href={link(current - 1)} className="text-blue-700 underline">
+              ← Алдыңғы
+            </Link>
+          ) : (
+            <span />
+          )}
+          {items.length === PAGE_SIZE && (
+            <Link href={link(current + 1)} className="text-blue-700 underline">
+              Келесі →
+            </Link>
+          )}
+        </div>
+      )}
     </section>
   );
 }

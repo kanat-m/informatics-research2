@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db import get_session
+from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.models import User
 
 from . import service
 from .models import Assessment
@@ -29,7 +31,7 @@ def list_assessments(
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ):
-    """Тізімді алу: іздеу, сүзгілеу, пагинация."""
+    """Тізімді алу: іздеу, сүзгілеу, пагинация (барлығына ашық)."""
     return service.list_assessments(session, q, subject, class_name, limit, offset)
 
 
@@ -39,21 +41,23 @@ def semantic_search(
     limit: int = Query(default=10, ge=1, le=50),
     session: Session = Depends(get_session),
 ):
-    """Мағына бойынша іздеу (pgvector)."""
+    """Мағына бойынша іздеу (барлығына ашық)."""
     return service.semantic_search(session, q, limit)
 
 
 @router.get("/{assessment_id}", response_model=AssessmentOut)
 def read_assessment(assessment: Assessment = Depends(get_or_404)):
-    """Бір жазбаны ID бойынша алу."""
+    """Бір жазбаны ID бойынша алу (барлығына ашық)."""
     return assessment
 
 
 @router.post("", response_model=AssessmentOut, status_code=status.HTTP_201_CREATED)
 def create_assessment(
-    data: AssessmentCreate, session: Session = Depends(get_session)
+    data: AssessmentCreate,
+    session: Session = Depends(get_session),
+    _: User = Depends(get_current_user),
 ):
-    """Жаңа жазба жасау."""
+    """Жаңа жазба жасау (тек кірген пайдаланушыларға)."""
     return service.create_assessment(session, data)
 
 
@@ -62,8 +66,9 @@ def update_assessment(
     data: AssessmentUpdate,
     assessment: Assessment = Depends(get_or_404),
     session: Session = Depends(get_session),
+    _: User = Depends(get_current_user),
 ):
-    """Жазбаны өзгерту."""
+    """Жазбаны өзгерту (тек кірген пайдаланушыларға)."""
     return service.update_assessment(session, assessment, data)
 
 
@@ -71,6 +76,7 @@ def update_assessment(
 def delete_assessment(
     assessment: Assessment = Depends(get_or_404),
     session: Session = Depends(get_session),
+    _: User = Depends(get_current_user),
 ) -> None:
-    """Жазбаны өшіру."""
+    """Жазбаны өшіру (тек кірген пайдаланушыларға)."""
     service.delete_assessment(session, assessment)

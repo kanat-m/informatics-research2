@@ -13,4 +13,28 @@ export type Assessment = {
 
 export type AssessmentInput = Omit<Assessment, "id" | "created_at">;
 
+export type User = {
+  id: number;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type UserCreate = {
+  email: string;
+  password: string;
+  full_name?: string | null;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type Token = {
+  access_token: string;
+  token_type: string;
+};
+
 export type FormState = { error?: string };
